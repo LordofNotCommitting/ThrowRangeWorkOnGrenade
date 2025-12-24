@@ -47,11 +47,11 @@ namespace ThrowRangeWorkOnGrenade
             int range = grenadeRecord.Range + __instance._creatures.Player.CreatureData.GetMeleeThrowRangeBonus();
             if (grenadeRecord.RicochetTrajectory)
             {
-                __instance._ballisticPath = TrajectoryCalculator.CalculateWayWithRicochets(__instance._mapGrid, __instance._mapRenderer, __instance._ballisticPath, position, cellUnderCursor, false, 0f, range, -1, false);
+                __instance._ballisticPath = TrajectoryCalculator.CalculateWayWithRicochets(__instance._mapGrid, __instance._mapRenderer, __instance._mapObstacles, __instance._ballisticPath, position, cellUnderCursor, false, 0f, range, -1, false, true);
             }
             else
             {
-                __instance._ballisticPath = TrajectoryCalculator.CalculateWayWithRicochets(__instance._mapGrid, __instance._mapRenderer, __instance._ballisticPath, position, cellUnderCursor, false, 0f, range, 0, false);
+                __instance._ballisticPath = TrajectoryCalculator.CalculateWayWithRicochets(__instance._mapGrid, __instance._mapRenderer, __instance._mapObstacles, __instance._ballisticPath, position, cellUnderCursor, false, 0f, range, 0, false, true);
             }
             __instance._ballisticPath = __instance._ballisticPath.GetStoppedAtCellWithoutRicochet(cellUnderCursor);
             __instance._view.ShowGrenadeTrajectory(__instance._ballisticPath);

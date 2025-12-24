@@ -14,7 +14,6 @@ namespace ThrowRangeWorkOnGrenade
             if (__instance._ballisticPath.Path.Count == 0)
             {
                 SingletonMonoBehaviour<SoundController>.Instance.PlayUiSound(SingletonMonoBehaviour<SoundsStorage>.Instance.EmptyAttack, false, 0f);
-
                 return false;
             }
             CellPosition position = __instance._creatures.Player.CreatureData.Position;
@@ -24,11 +23,11 @@ namespace ThrowRangeWorkOnGrenade
             int num2 = num + grenadeRecord.MaxOverthrowDistance;
             if (grenadeRecord.RicochetTrajectory)
             {
-                __instance._ballisticPath = TrajectoryCalculator.CalculateWayWithRicochets(__instance._mapGrid, __instance._mapRenderer, __instance._ballisticPath, position, cellPosition, false, 0f, num2, -1, false);
+                __instance._ballisticPath = TrajectoryCalculator.CalculateWayWithRicochets(__instance._mapGrid, __instance._mapRenderer, __instance._mapObstacles, __instance._ballisticPath, position, cellPosition, false, 0f, num2, -1, false, true);
             }
             else
             {
-                __instance._ballisticPath = TrajectoryCalculator.CalculateWayWithRicochets(__instance._mapGrid, __instance._mapRenderer, __instance._ballisticPath, position, cellPosition, false, 0f, num2, 0, false);
+                __instance._ballisticPath = TrajectoryCalculator.CalculateWayWithRicochets(__instance._mapGrid, __instance._mapRenderer, __instance._mapObstacles, __instance._ballisticPath, position, cellPosition, false, 0f, num2, 0, false, true);
             }
             int range = __instance.CalculateGrenadeRange(cellPosition, __instance._ballisticPath, num, num2, grenadeRecord);
             __instance._ballisticPath = __instance._ballisticPath.GetWithRange(range);
@@ -43,7 +42,6 @@ namespace ThrowRangeWorkOnGrenade
             __instance._creatures.Player.CreatureData.EffectsController.PropagateAction(PlayerActionHappened.HandAction);
             __instance._creatures.Player.ThrowGrenade(__instance._ballisticPath, itemByIndex, false);
             UI.Hide<SelectGrenadeTarget>();
-
             return false;
         }
 
