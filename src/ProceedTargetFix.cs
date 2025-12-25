@@ -2,6 +2,9 @@
 
 using HarmonyLib;
 using MGSC;
+using System.Collections.Generic;
+using System.Reflection.Emit;
+using System.Linq;
 
 namespace ThrowRangeWorkOnGrenade
 {
@@ -9,6 +12,51 @@ namespace ThrowRangeWorkOnGrenade
     [HarmonyPatch(typeof(SelectGrenadeTarget), nameof(SelectGrenadeTarget.ProceedTarget))]
     public class ProceedTargetFix
     {
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+            bool found = false;
+
+            for (int i = 0; i < codes.Count; i++)
+            {
+                if (codes[i].opcode == OpCodes.Callvirt && codes[i].operand.ToString().Contains("get_Range") &&
+                    codes[i + 1].opcode == OpCodes.Ldc_I4_1 &&
+                    codes[i + 2].opcode == OpCodes.Add)
+                {
+                    // The stack currently has (Range + 1). 
+                    // We will now load 'this' and navigate to the bonus method.
+
+                    var injection = new List<CodeInstruction>
+                {
+                    new CodeInstruction(OpCodes.Ldarg_0), // Load 'this'
+                    // Access this._creatures
+                    new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(SelectGrenadeTarget), "_creatures")), 
+                    // Access .Player
+                    new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(MGSC.Creatures), "Player")), 
+                    // Access .CreatureData
+                    new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(MGSC.Creature), "CreatureData")),
+                    // Call the bonus method
+                    new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(MGSC.CreatureData), "GetMeleeThrowRangeBonus")),
+                    // Add bonus to (Range + 1)
+                    new CodeInstruction(OpCodes.Add)
+                };
+
+                    codes.InsertRange(i + 3, injection);
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                Plugin.Logger.LogError("Could not find patch location in SelectGrenadeTarget.ProceedTarget!");
+            }
+
+            return codes.AsEnumerable();
+        }
+
+        /*
         static bool Prefix(ref SelectGrenadeTarget __instance, CellPosition cellPosition)
         {
             if (__instance._ballisticPath.Path.Count == 0)
@@ -44,6 +92,6 @@ namespace ThrowRangeWorkOnGrenade
             UI.Hide<SelectGrenadeTarget>();
             return false;
         }
-
+        */
     }
 }

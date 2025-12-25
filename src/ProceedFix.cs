@@ -3,6 +3,8 @@
 using HarmonyLib;
 using MGSC;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Emit;
 
 namespace ThrowRangeWorkOnGrenade
 {
@@ -10,6 +12,47 @@ namespace ThrowRangeWorkOnGrenade
     [HarmonyPatch(typeof(SelectGrenadeTarget), nameof(SelectGrenadeTarget.Process))]
     public class ProcessFix
     {
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+            bool found = false;
+
+            for (int i = 0; i < codes.Count; i++)
+            {
+                if (codes[i].opcode == OpCodes.Callvirt && codes[i].operand.ToString().Contains("get_Range"))
+                {
+                    // We inject immediately after get_Range returns the base range to the stack
+                    var injection = new List<CodeInstruction>
+                {
+                    new CodeInstruction(OpCodes.Ldarg_0), // Load 'this'
+                    // Access this._creatures
+                    new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(SelectGrenadeTarget), "_creatures")), 
+                    // Access .Player
+                    new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(MGSC.Creatures), "Player")), 
+                    // Access .CreatureData
+                    new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(MGSC.Creature), "CreatureData")),
+                    // Call the bonus method
+                    new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(MGSC.CreatureData), "GetMeleeThrowRangeBonus")),
+                    // Add bonus to (Range + 1)
+                    new CodeInstruction(OpCodes.Add)
+                };
+
+                    codes.InsertRange(i + 1, injection);
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                Plugin.Logger.LogError("Could not find patch location in SelectGrenadeTarget.Process!");
+            }
+
+            return codes.AsEnumerable();
+        }
+
+        /*
         static bool Prefix(ref SelectGrenadeTarget __instance, out bool interruptProcessing)
         {
             interruptProcessing = true;
@@ -70,6 +113,6 @@ namespace ThrowRangeWorkOnGrenade
 
             return false;
         }
-
+        */
     }
 }
